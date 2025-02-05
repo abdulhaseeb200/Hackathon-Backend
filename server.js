@@ -3,8 +3,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./src/modules/auth/routes/users');
+const beneficiaryRoutes = require('./src/modules/Beneficiary/routes/beneficiary');
 const cors = require("cors");
+const router = require('./src/modules/Charts/routes/industry');
 
 dotenv.config();
 
@@ -21,6 +23,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/beneficiary', beneficiaryRoutes);
+app.use("/api/industries", router);
 
 // Start server
 const PORT = process.env.PORT || 5000;
