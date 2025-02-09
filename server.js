@@ -1,33 +1,42 @@
-// server.js
-
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const cors = require("cors");
+
 const authRoutes = require('./src/modules/auth/routes/users');
 const beneficiaryRoutes = require('./src/modules/Beneficiary/routes/beneficiary');
-const cors = require("cors");
-const router = require('./src/modules/Charts/routes/industry');
+const industryRoutes = require('./src/modules/Charts/routes/industry');
 
 dotenv.config();
 
 const app = express();
-app.use(cors()); // Allow all origins (you can modify this for security)
+
+// CORS Configuration
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 // Middleware
 app.use(express.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.log(err));
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000, // Fix for MongoDB timeout issue
+})
+.then(() => console.log('✅ MongoDB connected'))
+.catch((err) => console.error('❌ MongoDB Connection Error:', err));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/beneficiary', beneficiaryRoutes);
-app.use("/api/industries", router);
+app.use('/api/industries', industryRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
