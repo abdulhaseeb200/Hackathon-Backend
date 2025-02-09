@@ -23,8 +23,6 @@ app.use(express.json());
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000, // Fix for MongoDB timeout issue
 })
 .then(() => console.log('✅ MongoDB connected'))
@@ -39,7 +37,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/beneficiary', beneficiaryRoutes);
 app.use('/api/industries', industryRoutes);
 
-// Start server
+// Handle Undefined Routes (404)
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
+
+// Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

@@ -1,26 +1,27 @@
 const express = require("express");
-const Beneficiary = require("../models/beneficiarySchema");  // Changed to Beneficiary to match the model
+const Beneficiary = require("../models/beneficiarySchema");
 
 const router = express.Router();
 
 // Register Beneficiary
 router.post("/register", async (req, res) => {
-  const { name, cnic, contact, address, purpose, department, date } = req.body; // Date bhi req.body se lein
+  const { name, cnic, contact, address, purpose, department, date } = req.body;
 
   try {
-    const exists = await Beneficiary.findOne({ cnic });
+    const exists = await Beneficiary.findOne({ cnic: cnic.trim().toLowerCase() });
     if (exists) {
       return res.status(400).json({ message: "Beneficiary already registered" });
     }
 
     const beneficiary = new Beneficiary({
       name,
-      cnic: cnic.trim().toLowerCase(), // Prevent duplicate CNIC with spaces/case
+      cnic: cnic.trim().toLowerCase(),
       contact,
       address,
       purpose,
       department,
-      date: date ? new Date(date) : new Date(), // Agar user date na de to default
+      date: date ? new Date(date) : new Date(),
+      status: "Pending" // Default status
     });
 
     await beneficiary.save();
@@ -31,11 +32,10 @@ router.post("/register", async (req, res) => {
   }
 });
 
-
 // Search Beneficiary by CNIC
 router.get("/search/:cnic", async (req, res) => {
   try {
-    const beneficiary = await Beneficiary.findOne({ cnic: req.params.cnic });
+    const beneficiary = await Beneficiary.findOne({ cnic: req.params.cnic.trim().toLowerCase() });
     if (!beneficiary) {
       return res.status(404).json({ message: "Beneficiary not found" });
     }
@@ -46,34 +46,26 @@ router.get("/search/:cnic", async (req, res) => {
   }
 });
 
-
-
 // Reports API
 router.get("/reports", async (req, res) => {
   try {
     let { fromDate, toDate, department, status } = req.query;
-
     let query = {};
 
-    // Date Range Filter
     if (fromDate && toDate) {
       query.date = { $gte: new Date(fromDate), $lte: new Date(toDate) };
     }
 
-    // Department Filter (Case-insensitive search)
     if (department) {
-      query.department = { $regex: new RegExp("^" + department.trim() + "$", "i") }; // ✅ FIXED
+      query.department = { $regex: new RegExp("^" + department.trim() + "$", "i") };
     }
 
-    // Status Filter
     if (status) {
       query.status = status;
     }
 
-    // Fetch filtered reports
     const beneficiaries = await Beneficiary.find(query).sort({ date: -1 });
 
-    // Aggregated Stats
     const total = await Beneficiary.countDocuments(query);
     const completed = await Beneficiary.countDocuments({ ...query, status: "Completed" });
     const pending = await Beneficiary.countDocuments({ ...query, status: "Pending" });
@@ -92,9 +84,6 @@ router.get("/reports", async (req, res) => {
   }
 });
 
-
-
-
 // Update Beneficiary Status and Remarks
 router.put("/update-status", async (req, res) => {
   const { cnic, status, remarks } = req.body;
@@ -104,7 +93,7 @@ router.put("/update-status", async (req, res) => {
   }
 
   try {
-    const beneficiary = await Beneficiary.findOne({ cnic });
+    const beneficiary = await Beneficiary.findOne({ cnic: cnic.trim().toLowerCase() });
     if (!beneficiary) {
       return res.status(404).json({ message: "Beneficiary not found" });
     }
